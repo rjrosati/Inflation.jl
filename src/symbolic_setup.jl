@@ -78,7 +78,10 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     hub = hubble(v,eh)
     et = eta(fp,eh,hub,gv)
     om = omega(eh,ev,et)
-    om3 = omega3(fp,gv,g,ginv,hub,eh)
+    om3 = om
+    if d > 1
+        om3 = omega3(fp,gv,g,ginv,hub,eh)
+    end
     println("starting h")
     #h,hl = options.christoffel(f,g,ginv)
     h,hl = options.christoffel(f,g,ginv)
@@ -190,7 +193,11 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     quotes = Dict{String,Any}()
     quotes["Eh"] = QuoteFn("_Eh",eh,vars)
     println("pi_eom")
-    quotes["Pi_eom"] = QuoteFnArrCSE("_Pieom",cse_pi_eom,vars)
+    if d > 1
+        quotes["Pi_eom"] = QuoteFnArrCSE("_Pieom",cse_pi_eom,vars)
+    else
+        quotes["Pi_eom"] = QuoteFnArr("_Pieom",pi_eom,vars)
+    end
     quotes["V"] = QuoteFn("_Pot",v,vars)
     println("ev")
     quotes["Ev"] = QuoteFn("_Ev",ev,vars)

@@ -1,4 +1,6 @@
 using Inflation
+using SymPy
+using LinearAlgebra
 using Test
 
 @testset "inflation models" begin
@@ -23,7 +25,10 @@ using Test
             return v
         end
 
-        funcs = inflation_setup(d,V,G,params=params,allow_caching=false)
+        opt = SetupOptions(
+        allow_caching = false
+        )
+        funcs = inflation_setup(d,V,G,params,options=opt)
         Phi0 = [18.0]
         Pi0  = [0.0]
 
@@ -32,7 +37,7 @@ using Test
         @test sol1.t[end] ≈ 81.9 rtol=0.02
         eh = funcs["Eh"]([sol1.u[end];pvalues]...)
         @test eh ≈ 1.0 atol=1e-8
-        tsol = transport_perturbations(sol1,pvalues,funcs,verbose=true,tensor_perturbations=true)
+        tsol = transport_perturbations(sol1,pvalues,funcs,verbose=true)
         ns = tsol["ns"]
         as = tsol["as"]
         As = tsol["As"]
@@ -69,10 +74,16 @@ using Test
         Phi0 = [.999]
         Pi0 = [0.0]
 
-        funcs = inflation_setup(d,V,G,params=params,allow_caching=false,attempt_HCA=false)
+        opt = SetupOptions(
+        allow_caching = false,
+        attempt_HCA = false
+        )
+
+        funcs = inflation_setup(d,V,G,params,options=opt)
         sol1 = background_evolve(Phi0,Pi0,pvalues,funcs,verbose=true)
 
         #analytics
+        Nexit_to_end = 55
         anal_ns = 1 - 2/Nexit_to_end
         anal_r  = 12*pvalues[1]/Nexit_to_end^2
         @test sol1.retcode == :Terminated
@@ -120,10 +131,15 @@ using Test
         Phi0 = [r0*cos(θ0), r0*sin(θ0)]
         Pi0 = [0.0, 0.0]
 
-        funcs = inflation_setup(d,V,G,params=params,allow_caching=false,attempt_HCA=false)#,Ginv=Ginv)
+        opt = SetupOptions(
+        allow_caching = false,
+        attempt_HCA = false
+        )
+        funcs = inflation_setup(d,V,G,params,options=opt)#,Ginv=Ginv)
         sol1 = background_evolve(Phi0,Pi0,pvalues,funcs,verbose=true)
 
         #analytics
+        Nexit_to_end = 55
         Nang = 0
         Neff = Nexit_to_end - Nang
         anal_ns = 1 - 2/Neff
@@ -156,8 +172,11 @@ using Test
             L = p[1]
             return L^2 * Phi[1]^2 / 2
         end
-
-        funcs = inflation_setup(d,V,G,params=params,allow_caching=false,attempt_HCA=false)
+        opt = SetupOptions(
+        allow_caching = false,
+        attempt_HCA = false
+        )
+        funcs = inflation_setup(d,V,G,params,options=opt)
         Phi0 = [0.6925,1e-24]
         Pi0 = [-0.0297881,4.8921e-29]
 
@@ -172,7 +191,7 @@ using Test
         params = [symbols(x,real=true,positive=true) for x in ["m","r"]]
         pvalues = [1e-5,10]
         function G(Phi,p)
-            return convert(Array{Sym},diagm(0=>ones(Int64, d)))
+            return Matrix{Int64}(I,d,d)
         end
 
         function V(Phi,p)
@@ -188,7 +207,10 @@ using Test
 
         Phi0 = [15.0,10.0]
         Pi0  = [0.0,0.0]
-        funcs = inflation_setup(d,V,G,params=params,allow_caching=false)
+        opt = SetupOptions(
+        allow_caching = false
+        )
+        funcs = inflation_setup(d,V,G,params,options=opt)
         sol2 = background_evolve(Phi0,Pi0,pvalues,funcs,verbose=true)
         @test sol2.retcode == :Terminated
         @test sol2.t[end] ≈ 82.407 rtol=0.02
@@ -215,7 +237,7 @@ using Test
         params = [symbols("m$i",real=true,positive=true) for i in 1:d]
         pvalues = [1e-5,1e-5,sqrt(1e-9),1e-5,1e-4]
         function G(Phi,p)
-            return convert(Array{Sym},diagm(0=>ones(Float64, d)))
+            return Matrix{Int64}(I,d,d)
         end
 
         function V(Phi,p)
@@ -229,8 +251,11 @@ using Test
 
         Phi0 = [15.0,10.0,-5.0,10.0,3.0]
         Pi0  = [0.0,0.0,0.0,0.0,0.0]
-        funcs = inflation_setup(d,V,G,params=params,allow_caching=false)
 
+        opt = SetupOptions(
+        allow_caching = false
+        )
+        funcs = inflation_setup(d,V,G,params,options=opt)
         sol5 = background_evolve(Phi0,Pi0,pvalues,funcs,verbose=true)
         @test sol5.retcode == :Terminated
         @test sol5.t[end] ≈ 115.62897 rtol=0.02
