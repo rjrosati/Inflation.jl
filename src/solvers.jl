@@ -1,5 +1,6 @@
 
-function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,options=BackgroundOptions())
+function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,
+    options::BackgroundOptions = BackgroundOptions())
     Eh = funcs["Eh"]
     accel = funcs["Pi_eom"]
     V = funcs["V"]
@@ -43,7 +44,7 @@ function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,options=Background
 
     func = ODEFunction(eom)#;jac=eom_jac)
     #prob = ODEProblem(func,Float64[Phi0;Pi0;H0],(0.0,max_efolds))
-    prob = ODEProblem(func,Float64[Phi0;Pi0],(0.0,max_efolds))
+    prob = ODEProblem(func,Float64[Phi0;Pi0],(0.0,options.max_efolds))
     cb = ContinuousCallback(end_inflation,terminate!)
     if verbose
         println("Solving background eom")
@@ -56,8 +57,8 @@ function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,options=Background
         println("Done. Nend = $(sol.t[end])")
     end
     Nend = sol.t[end]
-    if Nend > Nexit_to_end && haskey(funcs,"ns_hca") && funcs["ns_hca"] != Nothing
-        vars = [sol(Nend-Nexit_to_end);pvals]
+    if Nend > options.Nexit_to_end && haskey(funcs,"ns_hca") && funcs["ns_hca"] != Nothing
+        vars = [sol(Nend-options.Nexit_to_end);pvals]
         println("Estimated Pζ (HCA):\n $(funcs["Pz_hca"](vars...))")
         println("Estimated ns (HCA):\n $(funcs["ns_hca"](vars...))")
     end
@@ -92,14 +93,14 @@ function geodesic(Phi0,Pi0,pvals,funcs;verbose=false,max_efolds=max_efolds)
 end
 
 function get_ks(sol,funcs,pvals,options)
-    d = funcs["d"]
+    d = length(sol.u[1])÷2
     Hub(N) = funcs["H"]([sol(N);pvals]...)
     Nend = sol.t[end]
     Npivot = Nend - options.Nexit_to_end
-    loga_init = log(kpivot) + log(Mpc_to_Lpl) - log(Hub(Npivot)) - Npivot
+    loga_init = log(options.kpivot) + log(Mpc_to_Lpl) - log(Hub(Npivot)) - Npivot
 
     Nkrange = options.Nkrange
-    Nstep = 2*Nkrange / desired_ksteps
+    Nstep = 2*Nkrange / options.desired_ksteps
     Ns = Npivot-Nkrange:Nstep:Npivot+Nkrange
     Hs = [Hub(n) for n in Ns]
     logks = Ns .+ loga_init .+ log.(Hs)
@@ -129,8 +130,8 @@ function curved_nullspace(g,v)
     return ortho_ws
 end
 
-function transport_perturbations(sol,pvals,funcs;verbose=false,options=PerturbationOptions())
-    d = funcs["d"]
+function transport_perturbations(sol,pvals,funcs;verbose=false,options::PerturbationOptions =PerturbationOptions())
+    d = length(sol.u[1])÷2
     Nend = sol.t[end]
     Nsubhorizon = options.Nsubhorizon
     Nexit_to_end = options.Nexit_to_end
@@ -139,7 +140,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
     if Nearly < 0
         error("Not enough inflation! Attempted to evolve perturbations, but would've started at Ne = $Nearly")
     end
-    logainit,logks,Nexits = get_ks(sol,funcs,pvals)
+    logainit,logks,Nexits = get_ks(sol,funcs,pvals,options)
     if verbose
         println("Solving perturbations, with $(length(logks)) k-values")
         println("Nexit_to_end: $Nexit_to_end")
@@ -276,7 +277,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
         end
         P *= 1/(2*Eh(N))
         P /= (2*pi^2)
-        if !skip_assertions
+        if verbose
             @assert(P>0,"negative P")
         end
         return P
@@ -317,7 +318,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
     #    println("αshc = $ashc")
     #end
     #println(errors)
-    if compute_isocurvature && d > 1
+    if options.compute_isocurvature && d > 1
         p = poly_fit(logks.-logks[estar],log.(Pisos),2)
         Asiso = exp(p[1])
         nsiso = 1+p[2]
@@ -331,7 +332,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
 
     Ns = (Nend-Nexit_to_end-Nsubhorizon):0.1:Nend
     rs = Array{BigFloat}(undef,length(Ns))
-    if tensor_perturbations
+    if options.compute_tensors
         global rs
         if verbose
             println("Computing tensor perturbations at kstar")
@@ -358,7 +359,10 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
         GamIC = [ 1 -1 ; -1  abs(kτ)^2] * abs(kτH)^2
         odefunc = ODEFunction(Gamprime)#,jac=Gamjac)
         tprob = ODEProblem(odefunc,GamIC,(Nstart,Nend),logk)
-        tsol = DifferentialEquations.solve(tprob,tensors_solver,reltol=tensors_rtol,abstol=tensors_atol,maxiters=tensors_max_steps,save_everystep=false,saveat=0.1)# automatically choose algorithm?
+        tsol = DifferentialEquations.solve(tprob,options.tensors_solver,
+        reltol=options.tensors_rtol,abstol=options.tensors_atol,
+        maxiters=options.tensors_max_steps,save_everystep=options.save_everystep,
+        saveat=options.saveat)# automatically choose algorithm?
         Gam(N) = tsol(N)
         #push!(Gs,G)
         r = 4*Gam(Nend)[1,1]/As / (2*pi^2)
@@ -375,7 +379,6 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
     end
 
     function U(t)
-        d = funcs["d"]
         u = Matrix{Float64}(undef,2*d,2*d)
         mab = reshape(Mab(t),(d,d))
         #h = reshape(Chr(t),(d,d,d))
@@ -393,7 +396,6 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options=Perturbat
         return u
     end
     function Curv(G,t)
-        d = funcs["d"]
         mab = reshape(Mab(t),(d,d))
         Chr(N) = funcs["Chr"]([sol(N);pvals]...)
         h = reshape(Chr(t),(d,d,d))

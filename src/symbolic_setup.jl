@@ -1,4 +1,3 @@
-
 SymPy.diff(::Int,::Sym) = 0
 SymPy.diff(::Int,::Sym,::Sym) = 0
 SymPy.diff(::Float64,::Sym) = 0
@@ -21,6 +20,13 @@ function sum_separableQ(d,gv,f)
     end
     return true
 end
+function make_funcs(quotes)
+    funcs = Dict{String,Function}()
+    for (k,v) in quotes
+        funcs[k] = eval(v)
+    end
+    return funcs
+end
 
 function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     apply_hca = false
@@ -39,13 +45,12 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
             if options.return_quotes
                 return quotes
             else
-                funcs = make_funcs(d,quotes;apply_hca=quotes[end-1]!=nothing)
+                funcs = make_funcs(quotes)
                 return funcs
             end
         end
     end
     println("Solving for symbolic ϵV, Mab, etc and compiling...")
-    #diagonal_metric = isdiag(reshape(g,d,d))
     if d == 1
         ginv = [g[1,1]^(-1)]
     else
@@ -53,8 +58,8 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     end
     if options.simplification > 1
         println("simplifying g, ginv")
-        g = simplify.(g)
-        ginv = simplify.(ginv)
+        g = SymPy.simplify.(g)
+        ginv = SymPy.simplify.(ginv)
     end
     gv = Sym[diff(v,f[i]) for i in 1:d ]
     if options.attempt_HCA
@@ -76,23 +81,23 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     om3 = omega3(fp,gv,g,ginv,hub,eh)
     println("starting h")
     #h,hl = options.christoffel(f,g,ginv)
-    h,hl = options.christoffel(f,params)
+    h,hl = options.christoffel(f,g,ginv)
     println("starting pi_eom")
-    pi_eom = make_pi_eom(fp,h,ginv,gv,hub,eh;simplification=simplification)
+    pi_eom = make_pi_eom(fp,h,ginv,gv,hub,eh;simplification=options.simplification)
     println(sympy.count_ops.(pi_eom))
     cse_pi_eom = sympy.cse(pi_eom)
     println(sympy.count_ops.(cse_pi_eom))
     if !options.background_only
         println("starting Rpp")
-        Rpp = Rππ_fast(f,fp,h,hl,g,ginv)
+        Rpp = Rππ_fast(f,fp,h,hl,g,ginv,simplification=options.simplification)
         println(sympy.count_ops.(Rpp))
         #println(sympy.count_ops.(simplify(pi_eom[1])))
         geo_eom = make_geodesic_eom(fp,h)
         println("starting mass matrix")
         #pi_jac = make_pi_jac(f,fp,hub,eh,pi_eom)
-        Covggv = covggv(ggv,h,gv)
+        Covggv = covggv(ggv,h,gv,options.simp,options.simplification)
         println(sympy.count_ops.(Covggv))
-        Mab = mab(Covggv,Rpp,fp,hub,gv,eh,g,ginv)
+        Mab = mab(Covggv,Rpp,fp,hub,gv,eh,g,ginv,options.simp,options.simplification)
         println(sympy.count_ops.(Mab))
         cse_mab = sympy.cse(Mab)
         println("cse Mab")
@@ -182,108 +187,60 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     end
     println("quoting")
     vars = [f;fp;params]
-    ehquote = QuoteFn("_Eh",eh,vars)
+    quotes = Dict{String,Any}()
+    quotes["Eh"] = QuoteFn("_Eh",eh,vars)
     println("pi_eom")
-    eomquote = QuoteFnArrCSE("_Pieom",cse_pi_eom,vars)
-    vquote = QuoteFn("_Pot",v,vars)
+    quotes["Pi_eom"] = QuoteFnArrCSE("_Pieom",cse_pi_eom,vars)
+    quotes["V"] = QuoteFn("_Pot",v,vars)
     println("ev")
-    evquote = QuoteFn("_Ev",ev,vars)
-    etquote = QuoteFn("_Et",et,vars)
+    quotes["Ev"] = QuoteFn("_Ev",ev,vars)
+    quotes["Et"] = QuoteFn("_Et",et,vars)
     println("om")
-    omquote = QuoteFn("_Om",om,vars)
+    quotes["Om"] = QuoteFn("_Om",om,vars)
     #sympy.count_ops(om3)
-    #cse_om3 = sympy.cse(om3)
+    cse_om3 = sympy.cse(om3)
     #sympy.count_ops.(cse_om3)
-    om3quote = omquote #QuoteFnCSE("_Om3",cse_om3,vars)
-    hquote = QuoteFn("_H",hub,vars)
+    quotes["OmAlt"] = QuoteFnCSE("_Om3",cse_om3,vars)
+    quotes["H"] = QuoteFn("_H",hub,vars)
     println("g")
-    ginvquote = QuoteFnArr("_ginv",Sym[ginv...],vars)
-    gquote = QuoteFnArr("_g",Sym[g...],vars)
+    quotes["ginv"] = QuoteFnArr("_ginv",Sym[ginv...],vars)
+    quotes["g"] = QuoteFnArr("_g",Sym[g...],vars)
     if !options.background_only
         println("ggv")
-        ggvquote = QuoteFnArr("_ggv",ggv,vars)
-        geoquote = QuoteFnArr("_Geoeom",geo_eom,vars)
+        quotes["Vab"] = QuoteFnArr("_ggv",ggv,vars)
+        quotes["Geo_eom"] = QuoteFnArr("_Geoeom",geo_eom,vars)
         println("mab")
-        mabquote = QuoteFnArrCSE("_Mab",cse_mab,vars)
+        quotes["Mab"] = QuoteFnArrCSE("_Mab",cse_mab,vars)
         #mσσquote = QuoteFn(Mσσ,vars)
         #mssquote = QuoteFn(Mss,vars)
         #chquote = :(function Chr($(vars...)) return [$(h...)] end)
         println("pert eom")
         #peomquote = QuoteFnArr("_Perteom",[pert_eom...],[t,loga,logk,Gam...,vars...])
         #peomquote = QuoteFnArrCSE("_Perteom",cse_pert_eom,[t,loga,logk,Gam...,vars...])
-        puabquote = QuoteFnArrCSE("_Pertuab",cse_pert_uab,[t,loga,logk,vars...])
-        pcurvquote = QuoteFnArrCSE("_Pertcurv",cse_pert_curv,[vars...])
+        quotes["Pert_uab"] = QuoteFnArrCSE("_Pertuab",cse_pert_uab,[t,loga,logk,vars...])
+        quotes["Pert_curv"] = QuoteFnArrCSE("_Pertcurv",cse_pert_curv,[vars...])
         #pjacquote = :(function Pertjac($t,$loga,$logk,$(Gam...),$(vars...)) return [$(pert_jac...)] end )
-        teomquote = QuoteFnArr("_Tensoreom",[tensor_eom...],[t,loga,logk,unique(GT)...,vars...])
+        quotes["Tensor_eom"] = QuoteFnArr("_Tensoreom",[tensor_eom...],[t,loga,logk,unique(GT)...,vars...])
     end
-    pzhcaquote = Nothing
-    nshcaquote = Nothing
     if apply_hca
-        pzhcaquote = QuoteFn("Pzhca",Pz_hca,vars)
-        nshcaquote = QuoteFn("Nshca",Ns_hca,vars)
+        quotes["Pz_hca"] = QuoteFn("_Pzhca",Pz_hca,vars)
+        quotes["ns_hca"] = QuoteFn("_Nshca",Ns_hca,vars)
     end
     #quotes = [ehquote,eomquote,vquote,ggvquote,evquote,etquote,omquote,hquote,mabquote,mσσquote,mssquote,ginvquote,gquote,peomquote,teomquote,pzhcaquote,nshcaquote]
     println("done")
-    if !options.background_only
-        quotes = [ehquote,eomquote,vquote,ggvquote,evquote,etquote,omquote,om3quote,geoquote,hquote,mabquote,ginvquote,gquote,puabquote,pcurvquote,teomquote,pzhcaquote,nshcaquote,options.background_only]
-    else
-        quotes = [ehquote,eomquote,vquote,evquote,etquote,omquote,om3quote,hquote,ginvquote,gquote,pzhcaquote,nshcaquote,options.background_only]
+    if options.allow_caching
+        open(fname,"w") do f
+            serialize(f,quotes)
+        end
     end
     if options.return_quotes
-        if options.allow_caching
-            open(fname,"w") do f
-                serialize(f,quotes)
-            end
-        end
         return quotes
     else
-        lambdified = make_funcs(d,quotes,apply_hca=apply_hca)
-        if options.allow_caching
-            open(fname,"w") do f
-                serialize(f,quotes)
-            end
-        end
+        lambdified = make_funcs(quotes)
         return lambdified
     end
 end
 
-function make_funcs(d,quotes;apply_hca)
-    background_only = eval(quotes[end])
-    if !background_only
-        ehquote,eomquote,vquote,ggvquote,evquote,etquote,omquote,om3quote,geoquote,hquote,mabquote,ginvquote,gquote,puabquote,pcurvquote,teomquote,pzhcaquote,nshcaquote,_ = quotes
-    else
-        ehquote,eomquote,vquote,evquote,etquote,omquote,om3quote,hquote,ginvquote,gquote,pzhcaquote,nshcaquote,_ = quotes
-    end
-    #ehquote,eomquote,vquote,ggvquote,evquote,etquote,omquote,hquote,mabquote,mσσquote,mssquote,ginvquote,gquote,peomquote,teomquote,pzhcaquote,nshcaquote = quotes
-    lambdified = Dict()
-    lambdified["Eh"] = eval( ehquote )
-    lambdified["Pi_eom"] = eval( eomquote )
-    lambdified["V"] = eval(vquote)
-    lambdified["ginv"] = eval( ginvquote )
-    lambdified["g"] = eval( gquote )
-    if !background_only
-        lambdified["Vab"] = eval(ggvquote)
-        lambdified["Geo_eom"] = eval( geoquote )
-        #lambdified["Pert_eom"] = eval( peomquote )
-        lambdified["Pert_uab"] = eval( puabquote )
-        lambdified["Pert_curv"] = eval( pcurvquote )
-        lambdified["Tensor_eom"] = eval( teomquote )
-        lambdified["Mab"] = eval( mabquote )
-        #lambdified["Mσσ"] = eval( mσσquote )
-        #lambdified["Mss"] = eval( mssquote )
-    end
-    lambdified["H"] = eval( hquote )
-    lambdified["Om"] = eval( omquote )
-    lambdified["OmAlt"] = eval( om3quote )
-    lambdified["Ev"] = eval( evquote )
-    lambdified["Et"] = eval( etquote )
-    lambdified["d"]=d
-    if apply_hca
-        lambdified["Pz_hca"] = eval( pzhcaquote )
-        lambdified["ns_hca"] = eval( nshcaquote )
-    end
-    return lambdified
-end
 
 function make_pi_eom(Pi,h,ginv,va,H,e;simplification=0)
     d = length(Pi)
@@ -317,6 +274,7 @@ function make_pi_eom(Pi,h,ginv,va,H,e;simplification=0)
 end
 
 function make_geodesic_eom(Pi,h)
+    d = length(Pi)
     eom = Array{Sym}(undef,d)
     for i in 1:d
         eom[i] = -Pi'*h[i,:,:]*Pi
@@ -477,7 +435,7 @@ end
 #    return gpp
 #end
 
-function christoffel(Phi,g,ginv=inv(g),simplification=simplification)
+function christoffel(Phi,g,ginv=inv(g),simplification=1)
     """
     returns christoffel symbols as ``Γ^a_{bc}``
     """
@@ -499,7 +457,7 @@ function christoffel(Phi,g,ginv=inv(g),simplification=simplification)
     return h,hl
 end
 
-function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=simplification)
+function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=1)
     """
     compute a common contraction of the Riemann curvature tensor ``R^α_{βγδ} π^β π^γ``
     try to use some of the riemann tensor symmetries to help, internally use R_{αβγδ}
@@ -703,7 +661,7 @@ function omega3(fp,gv,g,ginv,hub,eh)
     pnorm = sqrt(piperp'*g*piperp)
     return (pnorm * Vv / (2*eh*hub^2))^2
 end
-function covggv(ggv,h,gv,simplification=simplification)
+function covggv(ggv,h,gv,simp,simplification)
     d = length(gv)
     Covggv = Array{Sym}(undef,d,d)
     for i in 1:d
@@ -721,7 +679,7 @@ function covggv(ggv,h,gv,simplification=simplification)
     return Covggv
 end
 
-function mab(Covggv,Rpp,fp,hub,gv,eh,g,ginv,simplification=simplification)
+function mab(Covggv,Rpp,fp,hub,gv,eh,g,ginv,simp,simplification=1)
     d = length(gv)
     Mab = Array{Sym}(undef,d,d) # actually Mab/H^2
     sa = Array{Sym}(undef,d)

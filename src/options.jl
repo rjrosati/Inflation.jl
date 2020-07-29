@@ -1,9 +1,7 @@
 @with_kw struct SetupOptions
     allow_caching::Bool = true
-    attempt_HCA::Bool = true
     return_quotes::Bool = false
     background_only::Bool = false
-    simplification::Int = simplification
     Ginv::Function = (G,f,params) -> inv(G(f,params))
     christoffel::Function = christoffel
     simplification::Int = 1 # level of simplification, bigger is more aggressive
@@ -23,6 +21,7 @@ end
     end_epsilon::Float64 = 1.0 # the value of ϵ that ends inflation
     save_everystep::Bool = false
     saveat::Float64 = 1e-3
+    Nexit_to_end::Float64 = 55
 end
 @with_kw struct PerturbationOptions
     # perturbations
