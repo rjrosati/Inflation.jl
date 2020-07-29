@@ -257,7 +257,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
         #    end
         #end
         P /= (2*pi^2)
-        @assert(P>0,"negative P")
+        #@assert(P>0,"negative P")
         return P
     end
 
