@@ -18,3 +18,4 @@ jobs:
   allow_failures:
     - julia: nightly
   fast_finish: true
+install: travis_wait mvn install
