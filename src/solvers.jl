@@ -277,9 +277,9 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
         end
         P *= 1/(2*Eh(N))
         P /= (2*pi^2)
-        if verbose
-            @assert(P>0,"negative P")
-        end
+        #if verbose
+            #@assert(P>0,"negative P")
+        #end
         return P
     end
 
