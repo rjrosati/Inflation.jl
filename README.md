@@ -6,7 +6,7 @@
 A Julia package for numerical evaluation of cosmic inflation models. Perturbations are evolved with the transport method.
 ![logo](https://github.com/rjrosati/Inflation.jl/raw/master/inflationjl.png "Logo")
 
-## installation
+## Installation
 For now, Inflation.jl is an unregistered Julia package. It can be installed with
 ```julia-repl
 julia> import Pkg
