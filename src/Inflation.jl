@@ -1,8 +1,11 @@
 module Inflation
 
 using SymPy
+@info "Travis CI hack"
 using DifferentialEquations
+@info "Travis CI hack"
 using ODEInterfaceDiffEq
+@info "Travis CI hack"
 #using DiffEqParamEstim
 using LinearAlgebra
 using CurveFit
