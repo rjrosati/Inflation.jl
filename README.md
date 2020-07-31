@@ -8,7 +8,7 @@ A Julia package for numerical evaluation of cosmic inflation models. Perturbatio
 
 ## Installation
 For now, Inflation.jl is an unregistered Julia package. It can be installed with
-```julia-repl
+```julia
 julia> import Pkg
 
 julia> Pkg.clone("https://github.com/rjrosati/Inflation.jl.git")
