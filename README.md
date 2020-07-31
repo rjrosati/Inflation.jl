@@ -5,6 +5,8 @@
 
 A Julia package for numerical evaluation of cosmic inflation models. Perturbations are evolved with the transport method. It supports symbolic calculation of the equations of motion, and remains efficient at a high number of fields, even with non-canonical kinetic terms.
 
+`Inflation.jl`automatically applies the [horizon-crossing approximation](https://arxiv.org/pdf/1303.3611.pdf), if the potential is detected to be sum-separable. Support is planned for automatic application of other approximations when they are valid as well.
+
 ![logo](https://github.com/rjrosati/Inflation.jl/raw/master/inflationjl.png "Logo")
 
 ## Installation
