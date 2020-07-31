@@ -1,7 +1,7 @@
 function output_data(name,funcs,pvals,sol,tsol,background_only)
     Nend = sol.t[end]
     bNs = 0.0:0.01:Nend
-    d = funcs["d"]
+    d = length(sol.u[1])÷2
     #Mσσ(N) = funcs["Mσσ"]([sol(N);pvals]...)
     #Mss(N) = funcs["Mss"]([sol(N);pvals]...)
     Eh(N) = funcs["Eh"]([sol(N)[1:2*d];pvals]...)
@@ -35,4 +35,8 @@ function output_data(name,funcs,pvals,sol,tsol,background_only)
             end
         end
     end
+end
+
+function generate_default_plots(output_fname)
+    # write to a pluto notebook
 end

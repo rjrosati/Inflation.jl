@@ -6,7 +6,7 @@ using Roots
 using ForwardDiff
 using LinearAlgebra
 
-d = 10
+d = 2
 
 # sample masses from the Marchenko-Pastur distribution
 m = 1e-5
@@ -71,3 +71,5 @@ funcs = inflation_setup(d,V,G,params)
 sol = background_evolve(Phi0,Pi0,pvalues,funcs,verbose=true)
 
 tsol = transport_perturbations(sol,pvalues,funcs,verbose=true)
+
+output_data("Nflation_test.jld2",funcs,pvalues,sol,tsol)
