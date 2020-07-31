@@ -1,7 +1,7 @@
 # Inflation.jl
 
 [![Build Status](https://travis-ci.com/rjrosati/Inflation.jl.svg?token=zMDX3GmCZbdBcf9JWMdp&branch=master)](https://travis-ci.com/rjrosati/Inflation.jl)
-[![codecov](https://codecov.io/gh/rjrosati/Inflation.jl/branch/master/graph/badge.svg?token=FHiP2Mqh90)](https://codecov.io/gh/rjrosati/Inflation.jl)
+[![codecov](https://codecov.io/gh/rjrosati/Inflation.jl/branch/master/graph/badge.svg?token=JIJHU89U8J)](https://codecov.io/gh/rjrosati/Inflation.jl)
 
 A Julia package for numerical evaluation of cosmic inflation models. Perturbations are evolved with the transport method.
 ![logo](https://github.com/rjrosati/Inflation.jl/raw/master/inflationjl.png "Logo")
