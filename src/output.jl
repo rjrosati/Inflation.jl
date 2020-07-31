@@ -1,4 +1,4 @@
-function output_data(name,funcs,pvals,sol,tsol,background_only)
+function output_data(name,funcs,pvals,sol,tsol)
     Nend = sol.t[end]
     bNs = 0.0:0.01:Nend
     d = length(sol.u[1])÷2
@@ -7,7 +7,7 @@ function output_data(name,funcs,pvals,sol,tsol,background_only)
     Eh(N) = funcs["Eh"]([sol(N)[1:2*d];pvals]...)
     Ev(N) = funcs["Ev"](sol(N)...,pvals...)
     Om(N) = funcs["Om"]([sol(N)[1:2*d];pvals]...)
-    if !background_only
+    if haskey(funcs,"Mab")
         Mab(N) = funcs["Mab"]([sol(N)[1:2*d];pvals]...)
         mabs = Mab.(bNs)
     end
@@ -22,7 +22,7 @@ function output_data(name,funcs,pvals,sol,tsol,background_only)
         write(f,"eh",ehs)
         write(f,"ev",evs)
         write(f,"omega",oms)
-        if !background_only
+        if haskey(funcs,"Mab")
             write(f,"Mab",mabs)
         end
         write(f,"Phi",phis)
