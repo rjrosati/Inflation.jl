@@ -101,7 +101,11 @@ for d in Nfs
     mparams = [symbols("m$i",real=true,positive=true) for i in 1:d]
     params = [symbols("α",real=true,positive=true),mparams...]
 
-    quotes = inflation_setup(d,V,G,params=params,attempt_HCA=false,return_quotes=true)
+    options = SetupOptions(
+                           attempt_HCA = false,
+                           return_quotes = true
+                          )
+    quotes = inflation_setup(d,V,G,params,options=options)
     @everywhere funcs = Inflation.make_funcs($quotes)
     @everywhere runs_to_run = $runs_to_run
     @sync @distributed for (N0,alpha,fullfname) in runs_to_run

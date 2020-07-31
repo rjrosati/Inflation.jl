@@ -4,6 +4,7 @@ using SymPy
 using Random
 using Roots
 using ForwardDiff
+using LinearAlgebra
 
 d = 10
 
@@ -65,10 +66,8 @@ Phi0 .*= sqrt(4*N0)
 
 Pi0 = zeros(d)
 
-funcs = inflation_setup(d,V,G,params=params)
+funcs = inflation_setup(d,V,G,params)
 
 sol = background_evolve(Phi0,Pi0,pvalues,funcs,verbose=true)
 
 tsol = transport_perturbations(sol,pvalues,funcs,verbose=true)
-println(tsol)
-

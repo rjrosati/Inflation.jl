@@ -14,7 +14,7 @@ For now, Inflation.jl is an unregistered Julia package. It can be installed with
 ```julia
 julia> import Pkg
 
-julia> Pkg.clone("https://github.com/rjrosati/Inflation.jl.git")
+julia> Pkg.add("https://github.com/rjrosati/Inflation.jl")
 ```
 
 ## an example
