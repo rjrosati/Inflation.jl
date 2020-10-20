@@ -490,8 +490,8 @@ function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=1)
     for i in 1:d, j in 1:d, k in 1:d, l in 1:d
         if !isassigned(R,i,j,k,l)
             # use lower index version for nice symmetries
-            R[i,j,k,l] = diff(hl[l,j,k],Phi[i]) - diff(hl[l,i,k],Phi[j])
-            R[i,j,k,l] += sum([(h[p,i,k]*hl[p,j,l] - h[p,j,k]*hl[p,i,l]) for p in 1:d])
+            R[i,j,k,l] = -(diff(hl[l,j,k],Phi[i]) - diff(hl[l,i,k],Phi[j]))
+            R[i,j,k,l] -= sum([(h[p,i,k]*hl[p,j,l] - h[p,j,k]*hl[p,i,l]) for p in 1:d])
             if simplification >= 2
                 R[i,j,k,l] = simp(R[i,j,k,l])
             end
@@ -518,37 +518,6 @@ function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=1)
         end
         if simplification >= 2
             Rpp[i,l] = simp(Rpp[i,l])
-        end
-    end
-    return Rpp
-end
-
-function Rππ(Phi,Pi,h;simplification=0)
-    """
-    compute a common contraction of the Riemann curvature tensor ``R^α_{βγδ} π^β π^γ``
-    """
-    d = length(Phi)
-    Rpp = Array{Sym}(undef,d,d)
-    if simplification >= 1
-        for i in 1:d, l in 1:d
-            Rpp[i,l] = 0
-            for j in 1:d, k in 1:d
-                for m in 1:d
-                    Rpp[i,l] += (h[i,k,m]*h[m,l,j] - h[i,l,m]*h[m,k,j])*Pi[j]*Pi[k]
-                end
-                Rpp[i,l] += (diff(h[i,l,j],Phi[k]) - diff(h[i,k,j],Phi[l]))*Pi[j]*Pi[k]
-                Rpp[i,l] = simp.(Rpp[i,l])
-            end
-        end
-    else
-        for i in 1:d, l in 1:d
-            Rpp[i,l] = 0
-            for j in 1:d, k in 1:d
-                for m in 1:d
-                    Rpp[i,l] += (h[i,k,m]*h[m,l,j] - h[i,l,m]*h[m,k,j])*Pi[j]*Pi[k]
-                end
-                Rpp[i,l] += (diff(h[i,l,j],Phi[k]) - diff(h[i,k,j],Phi[l]))*Pi[j]*Pi[k]
-            end
         end
     end
     return Rpp
