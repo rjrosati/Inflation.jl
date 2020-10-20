@@ -490,10 +490,8 @@ function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=1)
     for i in 1:d, j in 1:d, k in 1:d, l in 1:d
         if !isassigned(R,i,j,k,l)
             # use lower index version for nice symmetries
-            #R[i,j,k,l] = 1/2*(diff(g[i,l],Phi[j],Phi[k]) + diff(g[j,k],Phi[i],Phi[l]) +
-            #                  - diff(g[i,k],Phi[j],Phi[l]) - diff(g[j,l],Phi[i],Phi[k]))
-            R[i,j,k,l] = diff(hl[i,l,j],Phi[k]) - diff(hl[i,k,l],Phi[j])
-            R[i,j,k,l] += sum([(hl[p,j,k]*h[p,i,l] - hl[p,j,l]*h[p,i,k]) for p in 1:d])
+            R[i,j,k,l] = diff(hl[l,j,k],Phi[i]) - diff(hl[l,i,k],Phi[j])
+            R[i,j,k,l] += sum([(h[p,i,k]*hl[p,j,l] - h[p,j,k]*hl[p,i,l]) for p in 1:d])
             if simplification >= 2
                 R[i,j,k,l] = simp(R[i,j,k,l])
             end
