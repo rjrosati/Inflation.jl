@@ -109,25 +109,23 @@ end
 
 function curved_nullspace(g,v)
     d = length(v)
-    ginv = inv(g)
     proj(u,v) = u * (u'*g*v) / (u'*g*u)
     norm(v) = sqrt(v'*g*v)
+    ginv = inv(g)
     v ./= norm(v)
-    perpuu = ginv - v'.*v
-    ws = [ perpuu[:,i] for i in 2:d ]
-    ortho_ws = Array{eltype(v),2}(undef,d,d-1)
-
-    ortho_ws[:,1] = ws[1] / norm(ws[1])
-    for i in 2:d-1
-        w = ortho_ws[:,i-1]
-        w .-= proj(ws[i],w)
+    perpuu = ginv .- v'.*v
+    ws = [ perpuu[:,i] ./ norm(perpuu[:,i]) for i in 2:d ]
+    ortho_ws = Array{eltype(v),2}(undef,d,d)
+    ortho_ws[:,1] = v
+    for i in 2:d
+        w = ws[i-1]
         for j in 1:i-1
             w .-= proj(ortho_ws[:,j],w)
-        end
-        w /= norm(w)
+        end  
+        w ./= norm(w)
         ortho_ws[:,i] = w
-    end
-    return ortho_ws
+    end  
+    return ortho_ws[:,2:end]
 end
 
 function transport_perturbations(sol,pvals,funcs;verbose=false,options::PerturbationOptions =PerturbationOptions())
