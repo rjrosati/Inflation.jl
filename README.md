@@ -7,6 +7,8 @@ A Julia package for numerical evaluation of cosmic inflation models. Perturbatio
 
 `Inflation.jl`automatically applies the [horizon-crossing approximation](https://arxiv.org/pdf/1303.3611.pdf), if the potential is detected to be sum-separable. Support is planned for automatic application of other approximations when they are valid as well.
 
+Watch the talk given about this package at JuliaCon 2020: https://www.youtube.com/watch?v=gvUZiPPB3nI
+
 ![logo](https://github.com/rjrosati/Inflation.jl/raw/master/inflationjl.png "Logo")
 
 ## Installation
