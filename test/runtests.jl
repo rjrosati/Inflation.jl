@@ -276,7 +276,7 @@ using Test
         as = tsol["as"]
         As = tsol["As"]
         r = tsol["r"]
-        @test ns ≈ MMC_ns rtol=0.02
+        @test ns ≈ MMC_ns rtol=0.01
         @test as ≈ MMC_alpha_s rtol=0.05
         @test As ≈ MMC_As rtol=0.05
         @test r ≈ MMC_r rtol=0.02
