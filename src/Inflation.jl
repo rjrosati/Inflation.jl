@@ -1,17 +1,15 @@
 module Inflation
 
 using SymPy
-@info "Travis CI hack"
 using DifferentialEquations
-@info "Travis CI hack"
 using ODEInterfaceDiffEq
-@info "Travis CI hack"
 #using DiffEqParamEstim
 using LinearAlgebra
 using CurveFit
 using Serialization
 using JLD2
 using Parameters
+using RuntimeGeneratedFunctions
 
 export inflation_setup
 export background_evolve
@@ -19,6 +17,15 @@ export transport_perturbations
 export SetupOptions, BackgroundOptions, PerturbationOptions
 export output_data
 
+
+SymPy.diff(x::T,::Sym) where {T <: Real} = 0
+SymPy.diff(x::T,::Sym,::Sym) where {T <: Real} = 0
+
+RuntimeGeneratedFunctions.init(@__MODULE__)
+
+# needed as of SymPy 1.0.38
+import SymPy.fn_map
+fn_map["Mul"] = :__prod__
 
 # change this whenever there's a breaking change in the cache functions
 cache_version = 1.3

@@ -1,9 +1,3 @@
-SymPy.diff(::Int,::Sym) = 0
-SymPy.diff(::Int,::Sym,::Sym) = 0
-SymPy.diff(::Float64,::Sym) = 0
-SymPy.diff(::Float64,::Sym,::Sym) = 0
-
-
 function inflation_var_setup(d)
     f = [ symbols("ϕ$i",real=true) for i in 1:d ]
     fp= [ symbols("π$i",real=true) for i in 1:d ]
@@ -23,7 +17,7 @@ end
 function make_funcs(quotes)
     funcs = Dict{String,Function}()
     for (k,v) in quotes
-        funcs[k] = eval(v)
+        funcs[k] = @RuntimeGeneratedFunction(v)
     end
     return funcs
 end
@@ -113,9 +107,9 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
         println("done")
         println("making pert eom")
 
-        loga = symbols("loga")
-        logk = symbols("logk")
-        t = symbols("t")
+        loga = symbols("loga",real=true)
+        logk = symbols("logk",real=true)
+        t = symbols("t",positive=true)
         Gam = Array{Sym}(undef,2*d,2*d)
         for i in 1:2*d
             for j in 1:2*d

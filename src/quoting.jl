@@ -1,5 +1,5 @@
 function Quote(ex)
-    if ex isa Int || ex isa Float64 || ex isa Float32
+    if ex isa Real
         return ex
     else
         return convert(Expr, ex)

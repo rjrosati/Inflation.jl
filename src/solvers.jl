@@ -1,4 +1,3 @@
-
 function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,
     options::BackgroundOptions = BackgroundOptions())
     Eh = funcs["Eh"]
@@ -11,14 +10,14 @@ function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,
         Phi  = u[1:d]
         Pi   = u[d+1:2d]
         par  = [Phi;Pi;pvals]
-        e    = Eh(par...)
+        #e    = Eh(par...)
         # eom
         du[1:d] = Pi
         du[d+1:2*d] = accel(par...)
     end
     function end_inflation(vars,t,integrator)
         if t > options.min_efolds
-            e = Eh([vars[1:d];vars[d+1:2*d];pvals]...)
+            e = Eh(vars...,pvals...)
             return options.end_epsilon-e # trigger when this hits zero from above
         else
             return 1.0
@@ -43,8 +42,8 @@ function background_evolve(Phi0,Pi0,pvals,funcs;verbose=false,
     end
 
     func = ODEFunction(eom)#;jac=eom_jac)
-    #prob = ODEProblem(func,Float64[Phi0;Pi0;H0],(0.0,max_efolds))
-    prob = ODEProblem(func,Float64[Phi0;Pi0],(0.0,options.max_efolds))
+    SolT = eltype(Phi0)
+    prob = ODEProblem(func,SolT[Phi0;Pi0],(zero(SolT),SolT(options.max_efolds)))
     cb = ContinuousCallback(end_inflation,terminate!)
     if verbose
         println("Solving background eom")
@@ -121,10 +120,10 @@ function curved_nullspace(g,v)
         w = ws[i-1]
         for j in 1:i-1
             w .-= proj(ortho_ws[:,j],w)
-        end  
+        end
         w ./= norm(w)
         ortho_ws[:,i] = w
-    end  
+    end
     return ortho_ws[:,2:end]
 end
 
@@ -171,12 +170,13 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
     Nhc = sol.t[end] - Nexit_to_end
     Gs = Function[]
     odefunc = ODEFunction(Gprime)#,jac=Peom_jac)
+    SolT = eltype(sol(0.0))
     for (logk,Nexit) in zip(logks,Nexits)
         if verbose
             println("Solving logk $logk")
         end
         Nstart = Nexit - Nsubhorizon
-        prob = ODEProblem(odefunc,Matrix{Float64}(I,2*d,2*d),(Nstart,Nend),logk)
+        prob = ODEProblem(odefunc,Matrix{SolT}(I,2*d,2*d),(SolT(Nstart),SolT(Nend)),logk)
         psol = DifferentialEquations.solve(prob,options.scalars_solver,
         reltol=options.scalars_rtol,abstol=options.scalars_atol,
         maxiters=options.scalars_max_steps,save_everystep=options.save_everystep
@@ -192,7 +192,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
     estar = div(length(Nexits),2)+1
     Nstar = Nexits[estar]
     τ = -1/(exp(Nstar+logainit)*H(Nstar))
-    Σ_BD = Array{Float64}(undef,length(logks),2*d,2*d)
+    Σ_BD = Array{SolT}(undef,length(logks),2*d,2*d)
     for (ek,logk) in enumerate(logks)
         Nstart = Nexits[ek] - Nsubhorizon
         kτ = -exp(logk - Nstart - logainit)/H(Nstart)
@@ -263,7 +263,7 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
     function Piso(ek,N)
         gN = gNe(N)
         gi = reshape(ginv(N),d,d)
-        viα = LinearAlgebra.nullspace(convert(Array{Float64,2},(gi*gN[1:d])'))
+        viα = LinearAlgebra.nullspace(convert(Array{SolT,2},(gi*gN[1:d])'))
         S = Σ(ek,N)
         P = 0.0
         for a in 1:d
@@ -376,96 +376,9 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
         rs = []
     end
 
-    function U(t)
-        u = Matrix{Float64}(undef,2*d,2*d)
-        mab = reshape(Mab(t),(d,d))
-        #h = reshape(Chr(t),(d,d,d))
-        p = Pi(t)
-        @assert(1.0+1e-8 >= Eh(t) >= 0.0, "ϵH weird value: N=$t, ϵH=$(Eh(t))")
-        u = Matrix{Float64}(undef,2*d,2*d)
-        u[1:d,1:d] = zeros((d,d))
-        u[1:d,d+1:end] = Matrix{Float64}(I,d,d)
-        u[d+1:end,1:d] = -(Matrix{Float64}(I,d,d)*exp(2*(logk-t-logainit-log(H(t))))) - mab
-        u[d+1:end,d+1:end] = Matrix{Float64}(I,d,d)*(Eh(t)-3)
-        @assert(! any([isinf(x) for x in mab]),"Inf in mab")
-        @assert(! any([isnan(x) for x in mab]),"NaN in mab")
-        @assert(! any([isnan(x) for x in u]),"NaN in u!")
-        @assert(! any([isinf(x) for x in u]),"Inf in u!")
-        return u
-    end
-    function Curv(G,t)
-        mab = reshape(Mab(t),(d,d))
-        Chr(N) = funcs["Chr"]([sol(N);pvals]...)
-        h = reshape(Chr(t),(d,d,d))
-        p = Pi(t)
-        curv = Matrix{Float64}(undef,2*d,2*d)
-        for i in 1:2*d, j in 1:2*d
-            curv[i,j] = 0
-            for m in 1:d, n in 1:d
-                if i <= d
-                    curv[i,j] += h[i,m,n]*G[m,j]*p[n]
-                else
-                    curv[i,j] += h[i-d,m,n]*G[m+d,j]*p[n]
-                end
-#                if j <= d
-#                    curv[i,j] += h[j,m,n]*G[i,m]*p[n]
-#                else
-#                    curv[i,j] += h[j-d,m,n]*G[i,m+d]*p[n]
-#                end
-            end
-        end
-        return curv
-    end
 
-    #println(errors)
-    #bNs = 0.0:0.01:Nend
     PζsN = [Pζ(estar,N) for N in Ns]
     PisosN = [Piso(estar,N) for N in Ns]
-    #GamsN = [Gs[estar](N) for N in Ns]
-    #SigsN = [Σ(estar,N) for N in Ns]
-    #gNs = [gNe(N) for N in Ns]
-    #Mσσ(N) = funcs["Mσσ"]([sol(N);pvals]...)
-    #Mss(N) = funcs["Mss"]([sol(N);pvals]...)
-    #Mσσs = Mσσ.(bNs)
-    #Msss = Mss.(bNs)
-    #Mabs = Mab.(bNs)
-    #ehs = Eh.(bNs)
-    #evs = Ev.(bNs)
-    #oms = Om.(bNs)
-    #hs = H.(bNs)
-    #vabs = Vab.(bNs)
-    #om2s = Om2.(bNs)
-    #us = U.(Ns)
-    #curvs = [Curv(G,N) for (G,N) in zip(GamsN,Ns)]
-    #gs = g.(Ns)
-    #jldopen("./test.jld","w") do f
-    #    f["Msigsig"]=Mσσs
-    #    f["Mss"]=Msss
-    #    f["Mab"]=Mabs
-    #    f["u"]=sol.(bNs)
-    #    f["U"]=us
-    #    f["pvalues"]=pvals
-    #    f["Gam"] = GamsN
-    #    f["Sigma"] = SigsN
-    #    f["gNe"] = gNs
-    #    f["vab"] = vabs
-    #    f["h"] = hs
-    #    #f["potentialHash"]=
-    #    f["PzN"]=PζsN
-    #    f["PisoN"]=PisosN
-    #    f["rN"] = rs
-    #    f["Pzk"]=Pζs
-    #    f["Pisok"]=Pisos
-    #    f["lnk"] = logks.-logks[estar]
-    #    f["pert_Ne"]=Ns
-    #    f["back_Ne"]=bNs
-    #    f["curv"] = curvs
-    #    f["g"] =gs
-    #    f["eh"] = ehs
-    #    f["ev"] = evs
-    #    f["omega"] = oms
-    #    f["omega2"] = om2s
-    #end
 
     tsol = Dict()
     tsol["As"] = As
