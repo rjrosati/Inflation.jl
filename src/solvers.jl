@@ -162,7 +162,11 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
     function Gprime(dG,G,logk,t)
         @assert(1.0+1e-8 >= Eh(t) >= 0.0, "ϵH weird value: N=$t, ϵH=$(Eh(t))")
         Gπ = hp(t)
-        dG[:,:] = uab(t,logainit,logk) * G .- vcat(Gπ*G[1:d,:], Gπ*G[d+1:end,:])
+        G11 = @view(G[1:d,:])
+        G12 = @view(G[d+1:end,:])
+        G21 = @view(G[:,1:d])
+        G22 = @view(G[:,d+1:end])
+        dG .= uab(t,logainit,logk)*G .- vcat(Gπ*G11, Gπ*G12) .+ hcat(G21*Gπ, G22*Gπ)
         #dG[:,:] = reshape(eom(t,logainit,logk,G...,[sol(t)[1:2*d];pvals]...),2*d,2*d)
         nothing
     end
