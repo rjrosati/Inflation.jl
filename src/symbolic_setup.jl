@@ -55,7 +55,7 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
         g = SymPy.simplify.(g)
         ginv = SymPy.simplify.(ginv)
     end
-    gv = Sym[diff(v,f[i]) for i in 1:d ]
+    gv = SymPy.Sym[diff(v,f[i]) for i in 1:d ]
     if options.attempt_HCA
         apply_hca = sum_separableQ(d,gv,f)
     end
@@ -110,13 +110,13 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
         loga = symbols("loga",real=true)
         logk = symbols("logk",real=true)
         t = symbols("t",positive=true)
-        Gam = Array{Sym}(undef,2*d,2*d)
+        Gam = Array{SymPy.Sym}(undef,2*d,2*d)
         for i in 1:2*d
             for j in 1:2*d
                 Gam[i,j] = symbols("g$(i)o$j",real=true)
             end
         end
-        GT = Array{Sym}(undef,2,2)
+        GT = Array{SymPy.Sym}(undef,2,2)
         for i in 1:2
             for j in 1:i
                 GT[i,j] = symbols("gt$(i)o$j",real=true)
@@ -204,8 +204,8 @@ function inflation_setup(d,V,G,params=[];options::SetupOptions = SetupOptions())
     quotes["OmAlt"] = QuoteFnCSE("_Om3",cse_om3,vars)
     quotes["H"] = QuoteFn("_H",hub,vars)
     println("g")
-    quotes["ginv"] = QuoteFnArr("_ginv",Sym[ginv...],vars)
-    quotes["g"] = QuoteFnArr("_g",Sym[g...],vars)
+    quotes["ginv"] = QuoteFnArr("_ginv",SymPy.Sym[ginv...],vars)
+    quotes["g"] = QuoteFnArr("_g",SymPy.Sym[g...],vars)
     if !options.background_only
         println("ggv")
         quotes["Vab"] = QuoteFnArr("_ggv",ggv,vars)
@@ -276,7 +276,7 @@ end
 
 function make_geodesic_eom(Pi,h)
     d = length(Pi)
-    eom = Array{Sym}(undef,d)
+    eom = Array{SymPy.Sym}(undef,d)
     for i in 1:d
         eom[i] = -Pi'*h[i,:,:]*Pi
     end
@@ -303,8 +303,8 @@ end
 
 function make_pert_eom(t,G,p,mab,h,eh,loga,logk,hub)
     d = length(p)
-    u = Array{Sym}(undef,2*d,2*d)
-    curv = Matrix{Sym}(undef,2*d,2*d)
+    u = Array{SymPy.Sym}(undef,2*d,2*d)
+    curv = Matrix{SymPy.Sym}(undef,2*d,2*d)
     u[1:d,1:d] = zeros((d,d))
     u[1:d,d+1:end] = Matrix{Float64}(I,d,d)
     #u[d+1:end,1:d] = -(Matrix{Int64}(I,d,d)*exp(2*(logk-t-loga-log(hub)))) - mab
@@ -349,8 +349,8 @@ end
 
 function make_pert_uab(t,p,mab,h,eh,loga,logk,hub)
     d = length(p)
-    u = Array{Sym}(undef,2*d,2*d)
-    curv = Matrix{Sym}(undef,2*d,2*d)
+    u = Array{SymPy.Sym}(undef,2*d,2*d)
+    curv = Matrix{SymPy.Sym}(undef,2*d,2*d)
     u[1:d,1:d] = zeros((d,d))
     u[1:d,d+1:end] = Matrix{Float64}(I,d,d)
     u[d+1:end,1:d] = -(Matrix{Int64}(I,d,d)*exp(2*(logk-t-loga-log(hub)))) - mab
@@ -360,7 +360,7 @@ function make_pert_uab(t,p,mab,h,eh,loga,logk,hub)
 end
 function make_pert_curv(p,h)
     d = length(p)
-    hp = Array{Sym}(undef,d,d)
+    hp = Array{SymPy.Sym}(undef,d,d)
     for i in 1:d, j in 1:d
         hp[i,j] = sum([h[i,j,k]*p[k] for k in 1:d])
     end
@@ -441,8 +441,8 @@ function christoffel(Phi,g,ginv=inv(g),simplification=1)
     returns christoffel symbols as ``Γ^a_{bc}``
     """
     d = length(Phi)
-    h  = Array{Sym}(undef,d,d,d)
-    hl = Array{Sym}(undef,d,d,d)
+    h  = Array{SymPy.Sym}(undef,d,d,d)
+    hl = Array{SymPy.Sym}(undef,d,d,d)
     for j in 1:d, k in 1:d, l in k:d
         h[j,k,l]=0
         println(j,k,l)
@@ -475,7 +475,7 @@ function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=1)
     end
 
     d = length(Phi)
-    R = Array{Sym}(undef,d,d,d,d)
+    R = Array{SymPy.Sym}(undef,d,d,d,d)
     for i in 1:d
         R[i,i,:,:] = zeros(Int,d,d)
         R[:,:,i,i] = zeros(Int,d,d)
@@ -504,7 +504,7 @@ function Rππ_fast(Phi,Pi,h,hl,g,ginv;simplification=1)
         end
     end
     println("calculating Rππ")
-    Rpp = Array{Sym}(undef,d,d)
+    Rpp = Array{SymPy.Sym}(undef,d,d)
     for i in 1:d, l in 1:d
         Rpp[i,l] = 0
         for j in 1:d, k in 1:d, m in 1:d
@@ -631,7 +631,7 @@ function omega3(fp,gv,g,ginv,hub,eh)
 end
 function covggv(ggv,h,gv,simp,simplification)
     d = length(gv)
-    Covggv = Array{Sym}(undef,d,d)
+    Covggv = Array{SymPy.Sym}(undef,d,d)
     for i in 1:d
         for j in i:d
             Covggv[i,j] = ggv[i,j]
@@ -649,8 +649,8 @@ end
 
 function mab(Covggv,Rpp,fp,hub,gv,eh,g,ginv,simp,simplification=1)
     d = length(gv)
-    Mab = Array{Sym}(undef,d,d) # actually Mab/H^2
-    sa = Array{Sym}(undef,d)
+    Mab = Array{SymPy.Sym}(undef,d,d) # actually Mab/H^2
+    sa = Array{SymPy.Sym}(undef,d)
     for w in 1:d
         for b in 1:d
             for a in 1:d

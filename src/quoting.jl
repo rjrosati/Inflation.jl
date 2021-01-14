@@ -1,3 +1,6 @@
+import SymPy.fn_map
+SymPy.fn_map["Mul"] = :__prod__
+
 function Quote(ex)
     if ex isa Real
         return ex
@@ -7,7 +10,11 @@ function Quote(ex)
 end
 
 function QuoteFn(name,ex,vars=free_symbols(ex))
-    return Expr(:function, Expr(:call, Symbol(name), map(Symbol,vars)...), Quote(ex))
+    quot= Expr(:function, Expr(:call, Symbol(name), map(Symbol,vars)...), Quote(ex))
+    if name == "_Eh"
+        println(quot)
+    end
+    return quot
 end
 
 function QuoteFnCSE(name,cse_ex,vars=free_symbols(cse_ex[2]))

@@ -164,9 +164,9 @@ function transport_perturbations(sol,pvals,funcs;verbose=false,options::Perturba
         Gπ = hp(t)
         G11 = @view(G[1:d,:])
         G12 = @view(G[d+1:end,:])
-        G21 = @view(G[:,1:d])
-        G22 = @view(G[:,d+1:end])
-        dG .= uab(t,logainit,logk)*G .- vcat(Gπ*G11, Gπ*G12) .+ hcat(G21*Gπ, G22*Gπ)
+        #G21 = @view(G[:,1:d])
+        #G22 = @view(G[:,d+1:end])
+        dG .= uab(t,logainit,logk)*G .- vcat(Gπ*G11, Gπ*G12)# .+ hcat(G21*Gπ, G22*Gπ)
         #dG[:,:] = reshape(eom(t,logainit,logk,G...,[sol(t)[1:2*d];pvals]...),2*d,2*d)
         nothing
     end

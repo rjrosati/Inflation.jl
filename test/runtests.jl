@@ -196,7 +196,7 @@ using Test
 
         function V(Phi,p)
             m = [p[1]^2 0 ; 0 p[2]*p[1]^2]
-            v = Sym(0.0)
+            v = SymPy.Sym(0.0)
             for i in 1:d
                 for j in 1:d
                     v += (Phi[i] * m[i,j] * Phi[j])/2.0

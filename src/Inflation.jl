@@ -18,8 +18,8 @@ export SetupOptions, BackgroundOptions, PerturbationOptions
 export output_data
 
 
-SymPy.diff(x::T,::Sym) where {T <: Real} = 0
-SymPy.diff(x::T,::Sym,::Sym) where {T <: Real} = 0
+SymPy.diff(x::T,::SymPy.Sym) where {T <: Real} = 0
+SymPy.diff(x::T,::SymPy.Sym,::SymPy.Sym) where {T <: Real} = 0
 
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
