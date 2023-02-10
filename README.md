@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/rjrosati/Inflation.jl.svg?token=zMDX3GmCZbdBcf9JWMdp&branch=master)](https://travis-ci.com/rjrosati/Inflation.jl)
 [![codecov](https://codecov.io/gh/rjrosati/Inflation.jl/branch/master/graph/badge.svg?token=JIJHU89U8J)](https://codecov.io/gh/rjrosati/Inflation.jl)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4708348.svg)](https://doi.org/10.5281/zenodo.4708348)
 
 A Julia package for numerical evaluation of cosmic inflation models. Perturbations are evolved with the transport method. It supports symbolic calculation of the equations of motion, and remains efficient at a high number of fields, even with non-canonical kinetic terms.
 If you use this in a publication, please cite via the [Zenodo link](https://zenodo.org/record/4708348).
